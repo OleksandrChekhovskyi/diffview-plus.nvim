@@ -796,6 +796,7 @@ M.defaults = {
     worktree_overview = {
       { "n", "R",     actions.refresh_files,             { desc = "Re-scan worktrees and stats" } },
       { "n", "<CR>",  actions.worktree_overview_enter,   { desc = "Open DiffView for the selected worktree" } },
+      { "n", "g?",    actions.help("worktree_overview"), { desc = "Open the help panel" } },
     },
   },
 }
