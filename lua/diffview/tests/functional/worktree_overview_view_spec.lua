@@ -38,12 +38,17 @@ describe("diffview.scene.views.worktree_overview WorktreeOverviewView", function
         local joined = table.concat(lines, "\n")
         -- `render` strips the shared parent directory from every path, so
         -- what shows up on each row is the basename (`repo`, `repo-wt`),
-        -- not the full `/tmp/.../repo` form.
+        -- not the full `/tmp/.../repo` form. The negative assertion on
+        -- the shared parent pins the stripping behavior, since the
+        -- positive basename checks would still pass against unstripped
+        -- rendering (each basename is a substring of its full path).
         local repo_name = vim.fs.basename(repo)
         local linked_name = vim.fs.basename(linked)
+        local shared_parent = vim.fs.dirname(repo)
         assert.is_truthy(joined:find(repo_name, 1, true))
         assert.is_truthy(joined:find(linked_name, 1, true))
         assert.is_truthy(joined:find("feature/x", 1, true))
+        assert.is_nil(joined:find(shared_parent, 1, true))
 
         -- The linked worktree was branched off `make_repo`'s single commit
         -- with no further commits, so its ahead count should be zero.
