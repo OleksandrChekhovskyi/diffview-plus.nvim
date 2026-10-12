@@ -330,9 +330,16 @@ local function common_dir_prefix_len(entries)
       return 0
     end
   end
-  -- Trim back to the last `/` so a split dir name is never shown.
+  -- Trim back to the last `/` so a split dir name is never shown. A match
+  -- at position 1 is the Unix root `/`, and a match immediately after a
+  -- `:` is a Windows drive-letter root like `C:/`; in either case the
+  -- common prefix is just a filesystem root, so stripping it would turn
+  -- absolute paths into relative ones (and leave a `/`-only entry empty).
   local sep = first:sub(1, n):find("/[^/]*$")
-  return sep or 0
+  if not sep or sep == 1 or first:sub(sep - 1, sep - 1) == ":" then
+    return 0
+  end
+  return sep
 end
 
 ---Measure the per-column widths needed to align every visible row. Numeric
