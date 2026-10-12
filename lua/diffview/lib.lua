@@ -73,6 +73,11 @@ function M.diffview_open(args)
     cmd_ctx = {
       path_args = argo.post_args,
       cpath = argo:get_flag("C", { no_empty = true, expand = true }) --[[@as string? ]],
+      -- `--adapter=<kind>` pins the search to one adapter (`config_key`)
+      -- so a caller that assembled a Git-flavoured rev arg is not
+      -- re-dispatched to Jujutsu/Hg in a colocated repo. See
+      -- `vcs.init.get_adapter.Opt.Cmd_Ctx.adapter_kind`.
+      adapter_kind = argo:get_flag("adapter", { no_empty = true }) --[[@as string? ]],
     },
   })
 
