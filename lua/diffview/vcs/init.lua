@@ -13,6 +13,7 @@ local M = {}
 ---@class vcs.init.get_adapter.Opt.Cmd_Ctx
 ---@field path_args? string[] # Raw path args
 ---@field cpath? string # Cwd path given by the `-C` flag option
+---@field adapter_kind? string # If set, restrict the adapter search to the kind whose `config_key` matches, bypassing `preferred_adapter` entirely. For callers that MUST have a specific adapter (e.g., the worktree overview, which built its args in Git's revision grammar and must not be re-dispatched to Jujutsu in a colocated repo).
 
 ---@param opt vcs.init.get_adapter.Opt
 ---@return string? err
@@ -20,20 +21,38 @@ local M = {}
 function M.get_adapter(opt)
   local adapter_kinds = { GitAdapter, JjAdapter, HgAdapter, P4Adapter }
 
-  -- Move the preferred adapter to the front so it is tried first.
-  local preferred = config.get_config().preferred_adapter
-  if preferred then
-    for i, kind in ipairs(adapter_kinds) do
-      if kind.config_key == preferred then
-        table.remove(adapter_kinds, i)
-        table.insert(adapter_kinds, 1, kind)
+  if not opt.cmd_ctx then
+    opt.cmd_ctx = {}
+  end
+
+  if opt.cmd_ctx.adapter_kind then
+    -- Caller pinned a specific adapter kind. Collapse the search to that
+    -- one so `preferred_adapter` cannot reshuffle it away, and so other
+    -- VCS plugins installed in a colocated repo cannot win the probe.
+    local pinned = opt.cmd_ctx.adapter_kind
+    local matched
+    for _, kind in ipairs(adapter_kinds) do
+      if kind.config_key == pinned then
+        matched = kind
         break
       end
     end
-  end
-
-  if not opt.cmd_ctx then
-    opt.cmd_ctx = {}
+    if not matched then
+      return ("Unknown adapter kind: %q"):format(pinned)
+    end
+    adapter_kinds = { matched }
+  else
+    -- Move the preferred adapter to the front so it is tried first.
+    local preferred = config.get_config().preferred_adapter
+    if preferred then
+      for i, kind in ipairs(adapter_kinds) do
+        if kind.config_key == preferred then
+          table.remove(adapter_kinds, i)
+          table.insert(adapter_kinds, 1, kind)
+          break
+        end
+      end
+    end
   end
 
   for _, kind in ipairs(adapter_kinds) do

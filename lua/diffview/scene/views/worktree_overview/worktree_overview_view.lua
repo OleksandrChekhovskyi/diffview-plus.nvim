@@ -873,7 +873,11 @@ function WorktreeOverviewView:enter_selected()
   })
 
   local base = cfg.base or target:resolve_default_base()
-  local args = { "-C=" .. entry.path }
+  -- Pin the dispatch to Git. The overview is strictly a Git feature and
+  -- the rev arg we build below is Git-shorthand (`<base>...HEAD`), so
+  -- `diffview.open` must not re-select a Jujutsu / Hg / P4 adapter in a
+  -- colocated repo (which `preferred_adapter = "jj"` would otherwise do).
+  local args = { "--adapter=git", "-C=" .. entry.path }
   if base then
     -- `A...` is git shorthand for `A...HEAD`: commits reachable from HEAD
     -- but not from the merge-base with `A`. Matches the usual review scope.
