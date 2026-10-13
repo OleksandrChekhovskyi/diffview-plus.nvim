@@ -604,8 +604,9 @@ COMMANDS                                        *diffview-commands*
                         tabpage listing every linked git worktree.
 
                         Default keymaps on the overview buffer: >
-                            R      re-scan worktrees
-                            <CR>   open DiffView for the selected worktree
+                            `R`     re-scan worktrees
+                            `<CR>`  open DiffView for the selected worktree
+                            `g?`    open the help panel (lists every keymap)
 <
                         Close the overview with |:DiffviewClose| (same as
                         every other diffview tab).
