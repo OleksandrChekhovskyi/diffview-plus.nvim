@@ -1,6 +1,7 @@
 local PerfTimer = require("diffview.perf").PerfTimer
 local config = require("diffview.config")
 local hl = require("diffview.hl")
+local renderer = require("diffview.renderer")
 local utils = require("diffview.utils")
 
 local fmt = string.format
@@ -343,6 +344,12 @@ return {
     local comp = panel.components.header.comp
     local log_options = panel:get_log_options()
     local cached = cache[panel]
+    local compact = conf.compact_panel_headers
+
+    -- Each detail gets a line of its own, or with `compact_panel_headers` it
+    -- follows the title.
+    ---@type PanelHeaderDetail[]
+    local details = {}
 
     if conf.show_root_path then
       -- Computed fresh each render so auto-resize truncation reflects the
@@ -353,8 +360,7 @@ return {
             math.max(panel:infer_width() - 6, 1)
           )
         or pl:vim_fnamemodify(panel.adapter.ctx.toplevel, ":~")
-      comp:add_text(root_path, "DiffviewFilePanelRootPath")
-      comp:ln()
+      details[#details + 1] = { { root_path, "DiffviewFilePanelRootPath" } }
     end
 
     if panel.single_file then
@@ -363,25 +369,34 @@ return {
 
         -- file path
         local icon, icon_hl = hl.get_file_icon(file.basename, file.extension)
-        comp:add_text(icon, icon_hl)
+        local detail = { { icon, icon_hl } }
 
         if #file.parent_path > 0 then
-          comp:add_text(file.parent_path .. "/", "DiffviewFilePanelPath")
+          detail[#detail + 1] = { file.parent_path .. "/", "DiffviewFilePanelPath" }
         end
 
-        comp:add_text(file.basename, "DiffviewFilePanelFileName")
-        comp:ln()
+        detail[#detail + 1] = { file.basename, "DiffviewFilePanelFileName" }
+        details[#details + 1] = detail
       end
     elseif #cached.args > 0 then
-      comp:add_text("Showing history for: ", "DiffviewFilePanelPath")
-      comp:add_text(cached.args, "DiffviewFilePanelFileName")
-      comp:ln()
+      details[#details + 1] = {
+        label = "Showing history for: ",
+        { cached.args, "DiffviewFilePanelFileName" },
+      }
     end
 
     if log_options.rev_range and log_options.rev_range ~= "" then
-      comp:add_text("Revision range: ", "DiffviewFilePanelPath")
-      comp:add_text(log_options.rev_range, "DiffviewFilePanelFileName")
-      comp:ln()
+      details[#details + 1] = {
+        label = "Revision range: ",
+        { log_options.rev_range, "DiffviewFilePanelFileName" },
+      }
+    end
+
+    if not compact then
+      for _, detail in ipairs(details) do
+        renderer.add_header_detail(comp, detail, true)
+        comp:ln()
+      end
     end
 
     if conf.show_help_hints and panel.option_mapping then
@@ -398,9 +413,18 @@ return {
 
     -- title
     comp = panel.components.log.title.comp
-    comp:add_line()
+    if not compact then
+      comp:add_line()
+    end
     comp:add_text("File History ", "DiffviewFilePanelTitle")
     comp:add_text("(" .. #panel.entries .. ")", "DiffviewFilePanelCounter")
+
+    if compact then
+      for _, detail in ipairs(details) do
+        comp:add_text("  ")
+        renderer.add_header_detail(comp, detail, false)
+      end
+    end
 
     if panel.updating then
       comp:add_text(" (Updating...)", "DiffviewDim1")

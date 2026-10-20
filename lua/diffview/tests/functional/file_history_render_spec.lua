@@ -929,4 +929,54 @@ describe("file_history_panel header", function()
     local lines = render_lines(header_panel())
     eq({ "/tmp/repo", "", "File History (0)" }, lines)
   end)
+
+  describe("with compact_panel_headers", function()
+    before_each(function()
+      config.get_config().compact_panel_headers = true
+      config.get_config().show_help_hints = false
+    end)
+
+    it("shows the root path on the title line", function()
+      local lines = render_lines(header_panel())
+      eq({ "File History (0)  /tmp/repo" }, lines)
+    end)
+
+    it("shows the file of a single-file history after the root path", function()
+      local panel = header_panel({ single_file = true, entries = { header_entry("lua/a.lua") } })
+      local lines = render_lines(panel)
+      eq("File History (1)  /tmp/repo  lua/a.lua", lines[1])
+    end)
+
+    it("shows the path arguments and the revision range without labels", function()
+      local panel = header_panel({ path_args = { "lua" }, rev_range = "HEAD~2..HEAD" })
+      local lines = render_lines(panel)
+      eq({ "File History (0)  /tmp/repo  lua  HEAD~2..HEAD" }, lines)
+    end)
+
+    it("omits the root path when show_root_path is false", function()
+      config.get_config().show_root_path = false
+      local lines = render_lines(header_panel({ path_args = { "lua" } }))
+      eq({ "File History (0)  lua" }, lines)
+    end)
+
+    it("keeps the hints on lines of their own", function()
+      config.get_config().show_help_hints = true
+      local lines = render_lines(header_panel())
+      eq({ "Options: g!", "Help: g?", "File History (0)  /tmp/repo" }, lines)
+    end)
+
+    it("highlights the root path on the title line", function()
+      local panel = header_panel()
+      render.file_history_panel(panel)
+      local title = panel.components.log.title.comp
+      local found = false
+      for _, h in ipairs(title.hl) do
+        if h.group == "DiffviewFilePanelRootPath" then
+          eq("/tmp/repo", title.lines[1]:sub(h.first + 1, h.last))
+          found = true
+        end
+      end
+      assert.is_true(found)
+    end)
+  end)
 end)

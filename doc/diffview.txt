@@ -753,6 +753,17 @@ show_root_path                                  *diffview-config-show_root_path*
         Show the repository root path in the file panel and file history panel
         headers.
 
+compact_panel_headers                    *diffview-config-compact_panel_headers*
+        Type: `boolean`, Default: `false`
+
+        Show the details from the file panel and file history panel headers
+        on the first title line, without their labels, instead of on lines of
+        their own: the repository root path, the branch name, the file or
+        paths of a file history, and its revision range. The blank line
+        between the header and the title is dropped too. Help hints, when
+        shown, keep their own lines. Useful when the panels are placed above
+        or below the diff, where vertical space is limited.
+
 watch_index                                     *diffview-config-watch_index*
         Type: `boolean`, Default: `true`
 

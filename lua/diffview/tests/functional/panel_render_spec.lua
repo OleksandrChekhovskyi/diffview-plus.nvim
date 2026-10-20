@@ -581,6 +581,99 @@ describe("panel_render", function()
   end)
 
   -- -----------------------------------------------------------------------
+  -- compact_panel_headers
+  -- -----------------------------------------------------------------------
+
+  describe("compact_panel_headers", function()
+    local FilePanel = require("diffview.scene.views.diff.file_panel").FilePanel
+
+    local function make_files(working, staged)
+      local files = { conflicting = {}, working = working or {}, staged = staged or {} }
+      function files:iter()
+        local all = vim.list_extend(vim.list_extend({}, self.working), self.staged)
+        local i = 0
+        return function()
+          i = i + 1
+          if i <= #all then
+            return i, all[i]
+          end
+        end
+      end
+      function files:len()
+        return #self.conflicting + #self.working + #self.staged
+      end
+      return files
+    end
+
+    local function render_lines(working, staged, is_loading)
+      -- Disable icons so render does not require nvim-web-devicons.
+      config.get_config().use_icons = false
+
+      local adapter = {
+        ctx = { toplevel = "/tmp", dir = "/tmp/.git" },
+        get_branch_name = function()
+          return "main"
+        end,
+      }
+      local panel = FilePanel(adapter, make_files(working, staged), {})
+      panel.listing_style = "list"
+      panel.is_loading = is_loading or false
+      panel:init_buffer()
+      panel:update_components()
+      panel:render()
+      panel:redraw()
+
+      local lines = vim.api.nvim_buf_get_lines(panel.bufid, 0, -1, false)
+      panel:destroy()
+      return lines
+    end
+
+    before_each(function()
+      config.get_config().show_help_hints = false
+    end)
+
+    it("shows the root path on a line of its own by default", function()
+      local lines = render_lines({ make_entry("a.lua") })
+      eq("/tmp", lines[1])
+      eq("Changes (1)", lines[2])
+    end)
+
+    it("shows the root path on the first section title", function()
+      config.get_config().compact_panel_headers = true
+      local lines = render_lines({ make_entry("a.lua") }, { make_entry("b.lua", "staged") })
+      eq("Changes (1)  /tmp", lines[1])
+      assert.truthy(vim.tbl_contains(lines, "Staged changes (1)"))
+    end)
+
+    it("uses the staged section title when it comes first", function()
+      config.get_config().compact_panel_headers = true
+      local lines = render_lines({}, { make_entry("b.lua", "staged") })
+      eq("Staged changes (1)  /tmp", lines[1])
+    end)
+
+    it("shows the branch name without its label", function()
+      config.get_config().compact_panel_headers = true
+      config.get_config().file_panel.show_branch_name = true
+      local lines = render_lines({ make_entry("a.lua") })
+      eq("Changes (1)  /tmp  main", lines[1])
+    end)
+
+    it("drops the blank line after the help hint", function()
+      config.get_config().compact_panel_headers = true
+      config.get_config().show_help_hints = true
+      local lines = render_lines({ make_entry("a.lua") })
+      eq("Changes (1)  /tmp", lines[2])
+      assert.truthy(lines[1]:find("^Help: "))
+    end)
+
+    it("shows only the loading message while loading", function()
+      config.get_config().compact_panel_headers = true
+      local lines = render_lines({}, {}, true)
+      eq({ "  Fetching changes..." }, lines)
+    end)
+  end)
+
+  -- -----------------------------------------------------------------------
   -- Tree collapsed state preservation (commit 49c3984)
   -- -----------------------------------------------------------------------
 

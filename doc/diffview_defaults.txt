@@ -32,6 +32,7 @@ DEFAULT CONFIG                                  *diffview.defaults*
     use_icons = true,         -- Requires nvim-web-devicons or mini.icons
     show_help_hints = true,   -- Show hints for how to open the help and option panels
     show_root_path = true,    -- Show repository root path in panel headers.
+    compact_panel_headers = false, -- Show panel header details on the title line.
     watch_index = true,       -- Update views and index buffers when the git index changes.
     hide_merge_artifacts = false, -- Hide merge artifact files (*.orig, *.BACKUP.*, *.BASE.*, *.LOCAL.*, *.REMOTE.*)
     auto_close_on_empty = false, -- Close diffview when the last file is staged/resolved

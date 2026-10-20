@@ -1,5 +1,6 @@
 local config = require("diffview.config")
 local hl = require("diffview.hl")
+local renderer = require("diffview.renderer")
 local utils = require("diffview.utils")
 
 local api = vim.api
@@ -441,26 +442,42 @@ local function render_panel(panel)
   local width = panel:infer_width()
 
   local comp = panel.components.path.comp
+  local compact = conf.compact_panel_headers
+
+  -- Each detail gets a line of its own, or with `compact_panel_headers` it
+  -- follows the first section title.
+  ---@type PanelHeaderDetail[]
+  local details = {}
 
   if conf.show_root_path then
-    comp:add_line(
-      pl:truncate(pl:vim_fnamemodify(panel.adapter.ctx.toplevel, ":~"), width - 6),
-      "DiffviewFilePanelRootPath"
-    )
+    details[#details + 1] = {
+      {
+        pl:truncate(pl:vim_fnamemodify(panel.adapter.ctx.toplevel, ":~"), width - 6),
+        "DiffviewFilePanelRootPath",
+      },
+    }
   end
 
   if conf.file_panel.show_branch_name then
     local branch_name = panel.adapter:get_branch_name()
     if branch_name then
-      comp:add_text("Branch: ", "DiffviewFilePanelPath")
-      comp:add_line(branch_name, "DiffviewFilePanelTitle")
+      details[#details + 1] = { label = "Branch: ", { branch_name, "DiffviewFilePanelTitle" } }
+    end
+  end
+
+  if not compact then
+    for _, detail in ipairs(details) do
+      renderer.add_header_detail(comp, detail, true)
+      comp:ln()
     end
   end
 
   if conf.show_help_hints and panel.help_mapping then
     comp:add_text("Help: ", "DiffviewFilePanelPath")
     comp:add_line(panel.help_mapping, "DiffviewFilePanelCounter")
-    comp:add_line()
+    if not compact then
+      comp:add_line()
+    end
   end
 
   if panel.is_loading then
@@ -468,11 +485,24 @@ local function render_panel(panel)
     return
   end
 
+  ---@param title_comp RenderComponent
+  ---@param title string
+  ---@param kind "conflicting"|"working"|"staged"
+  local function add_section_title(title_comp, title, kind)
+    title_comp:add_text(title .. " ", "DiffviewFilePanelTitle")
+    title_comp:add_text(section_counter(panel, kind), "DiffviewFilePanelCounter")
+    if compact then
+      for _, detail in ipairs(details) do
+        title_comp:add_text("  ")
+        renderer.add_header_detail(title_comp, detail, false)
+      end
+      details = {}
+    end
+    title_comp:ln()
+  end
+
   if #panel.files.conflicting > 0 then
-    comp = panel.components.conflicting.title.comp
-    comp:add_text("Conflicts ", "DiffviewFilePanelTitle")
-    comp:add_text(section_counter(panel, "conflicting"), "DiffviewFilePanelCounter")
-    comp:ln()
+    add_section_title(panel.components.conflicting.title.comp, "Conflicts", "conflicting")
 
     render_files(conf, panel, panel.listing_style, panel.components.conflicting.files.comp)
     panel.components.conflicting.margin.comp:add_line()
@@ -484,10 +514,7 @@ local function render_panel(panel)
   -- Don't show the 'Changes' section if it's empty and we have other visible
   -- sections (unless always_show_sections is enabled).
   if #panel.files.working > 0 or not has_other_files or always_show then
-    comp = panel.components.working.title.comp
-    comp:add_text("Changes ", "DiffviewFilePanelTitle")
-    comp:add_text(section_counter(panel, "working"), "DiffviewFilePanelCounter")
-    comp:ln()
+    add_section_title(panel.components.working.title.comp, "Changes", "working")
 
     -- Show friendly message when working tree is clean.
     if #panel.files.working == 0 and not has_other_files then
@@ -501,10 +528,7 @@ local function render_panel(panel)
   end
 
   if #panel.files.staged > 0 or always_show then
-    comp = panel.components.staged.title.comp
-    comp:add_text("Staged changes ", "DiffviewFilePanelTitle")
-    comp:add_text(section_counter(panel, "staged"), "DiffviewFilePanelCounter")
-    comp:ln()
+    add_section_title(panel.components.staged.title.comp, "Staged changes", "staged")
 
     if #panel.files.staged == 0 then
       panel.components.staged.files.comp:add_line("  (empty)", "DiffviewDim1")

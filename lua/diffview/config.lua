@@ -138,6 +138,7 @@ local conflict_keymaps = {
 ---@field use_icons boolean
 ---@field show_help_hints boolean
 ---@field show_root_path boolean
+---@field compact_panel_headers boolean
 ---@field watch_index boolean
 ---@field hide_merge_artifacts boolean
 ---@field auto_close_on_empty boolean
@@ -171,6 +172,7 @@ local conflict_keymaps = {
 ---@field use_icons? boolean Requires nvim-web-devicons or mini.icons.
 ---@field show_help_hints? boolean Show hints for how to open the help and option panels.
 ---@field show_root_path? boolean Show repository root path in panel headers.
+---@field compact_panel_headers? boolean Show panel header details on the title line to save vertical space.
 ---@field watch_index? boolean Update views and index buffers when the git index changes.
 ---@field hide_merge_artifacts? boolean Hide merge artifact files (*.orig, *.BACKUP.*, *.BASE.*, *.LOCAL.*, *.REMOTE.*).
 ---@field auto_close_on_empty? boolean Close diffview when the last file is staged/resolved.
@@ -206,6 +208,7 @@ M.defaults = {
   use_icons = true,
   show_help_hints = true,
   show_root_path = true, -- Show repository root path in panel headers.
+  compact_panel_headers = false, -- Show panel header details on the title line.
   watch_index = true,
   hide_merge_artifacts = false, -- Hide merge artifact files (*.orig, *.BACKUP.*, etc.)
   auto_close_on_empty = false, -- Automatically close diffview when the last file is staged/resolved.
@@ -1559,6 +1562,7 @@ function M.setup(user_config)
   validate.boolean(c, "use_icons", d.use_icons)
   validate.boolean(c, "show_help_hints", d.show_help_hints)
   validate.boolean(c, "show_root_path", d.show_root_path)
+  validate.boolean(c, "compact_panel_headers", d.compact_panel_headers)
   validate.boolean(c, "watch_index", d.watch_index)
   validate.boolean(c, "hide_merge_artifacts", d.hide_merge_artifacts)
   validate.boolean(c, "auto_close_on_empty", d.auto_close_on_empty)

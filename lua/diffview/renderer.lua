@@ -364,6 +364,24 @@ function RenderData:reset()
   self.components = {}
 end
 
+---A piece of panel header information, such as the repository root path.
+---@class PanelHeaderDetail
+---@field label? string Shown before the segments when the detail has a line of its own.
+---@field [integer] { [1]: string, [2]: string? } Segments of text and highlight group.
+
+---Add a panel header detail to the current line of a component.
+---@param comp RenderComponent
+---@param detail PanelHeaderDetail
+---@param with_label boolean
+function M.add_header_detail(comp, detail, with_label)
+  if with_label and detail.label then
+    comp:add_text(detail.label, "DiffviewFilePanelPath")
+  end
+  for _, segment in ipairs(detail) do
+    comp:add_text(segment[1], segment[2])
+  end
+end
+
 function M.destroy_comp_struct(schema)
   schema.comp = nil
   for k, v in pairs(schema) do

@@ -109,6 +109,32 @@ describe("show_root_path", function()
 end)
 
 -- ---------------------------------------------------------------------------
+-- compact_panel_headers
+-- ---------------------------------------------------------------------------
+
+describe("compact_panel_headers", function()
+  local original
+
+  before_each(function()
+    original = vim.deepcopy(config.get_config())
+  end)
+
+  after_each(function()
+    config.setup(original)
+  end)
+
+  it("defaults to false", function()
+    local conf = setup_with({})
+    assert.is_false(conf.compact_panel_headers)
+  end)
+
+  it("survives setup() when explicitly set to true", function()
+    local conf = setup_with({ compact_panel_headers = true })
+    assert.is_true(conf.compact_panel_headers)
+  end)
+end)
+
+-- ---------------------------------------------------------------------------
 -- rename_threshold (commit c5b9200)
 -- ---------------------------------------------------------------------------
 
