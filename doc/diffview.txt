@@ -744,7 +744,8 @@ use_icons                                       *diffview-config-use_icons*
 show_help_hints                                 *diffview-config-show_help_hints*
         Type: `boolean`, Default: `true`
 
-        Show hints for how to open the help panel.
+        Show hints for how to open the help panel, and the option panel in the
+        file history panel.
 
 show_root_path                                  *diffview-config-show_root_path*
         Type: `boolean`, Default: `true`

@@ -384,7 +384,7 @@ return {
       comp:ln()
     end
 
-    if panel.option_mapping then
+    if conf.show_help_hints and panel.option_mapping then
       comp:add_text("Options: ", "DiffviewFilePanelPath")
       comp:add_text(panel.option_mapping, "DiffviewFilePanelCounter")
       comp:ln()

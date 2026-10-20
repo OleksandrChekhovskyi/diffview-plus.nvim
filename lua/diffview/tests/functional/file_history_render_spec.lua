@@ -828,3 +828,105 @@ describe("file_history state preservation", function()
     eq("c.txt", panel.cur_item[2].path)
   end)
 end)
+
+-- =========================================================================
+-- Panel header
+-- =========================================================================
+
+describe("file_history_panel header", function()
+  local renderer = require("diffview.renderer")
+  local FileHistoryPanel =
+    require("diffview.scene.views.file_history.file_history_panel").FileHistoryPanel
+
+  local original
+
+  before_each(function()
+    original = vim.deepcopy(config.get_config())
+    config.get_config().use_icons = false
+  end)
+
+  after_each(function()
+    config.setup(original)
+  end)
+
+  ---Create a stub log entry that the commit formatters can render.
+  ---@param path string
+  ---@return table
+  local function header_entry(path)
+    local parts = vim.split(path, "/")
+    return {
+      single_file = true,
+      folded = true,
+      status = "M",
+      stats = { additions = 1, deletions = 0 },
+      commit = {
+        hash = "abcdef0123456789",
+        subject = "subject",
+        author = "author",
+        rel_date = "now",
+        iso_date = "2026-01-01",
+        time = os.time(),
+      },
+      files = {
+        {
+          path = path,
+          basename = parts[#parts],
+          extension = parts[#parts]:match("%.(%w+)$") or "",
+          parent_path = table.concat(parts, "/", 1, #parts - 1),
+        },
+      },
+    }
+  end
+
+  ---Build a FileHistoryPanel-shaped table with real render components.
+  ---@param opts? { entries?: table[], single_file?: boolean, path_args?: string[], rev_range?: string }
+  ---@return table
+  local function header_panel(opts)
+    opts = opts or {}
+    local panel = {
+      render_data = renderer.RenderData("diffview_test_fh_header"),
+      entries = opts.entries or {},
+      single_file = opts.single_file or false,
+      updating = false,
+      option_mapping = "g!",
+      help_mapping = "g?",
+      cur_item = {},
+      state = { form = "row" },
+      adapter = { ctx = { toplevel = "/tmp/repo" } },
+      log_options = { single_file = { path_args = opts.path_args or {} } },
+      get_log_options = function()
+        return { rev_range = opts.rev_range }
+      end,
+      infer_width = function()
+        return 80
+      end,
+    }
+    panel.update_components = FileHistoryPanel.update_components
+    panel:update_components()
+    return panel
+  end
+
+  ---Render the panel into a scratch buffer and return its lines.
+  ---@param panel table
+  ---@return string[]
+  local function render_lines(panel)
+    render.file_history_panel(panel)
+    local bufid = vim.api.nvim_create_buf(false, true)
+    renderer.render(bufid, panel.render_data)
+    local lines = vim.api.nvim_buf_get_lines(bufid, 0, -1, false)
+    vim.api.nvim_buf_delete(bufid, { force = true })
+    return lines
+  end
+
+  it("shows the options and help hints by default", function()
+    local lines = render_lines(header_panel())
+    assert.truthy(vim.tbl_contains(lines, "Options: g!"))
+    assert.truthy(vim.tbl_contains(lines, "Help: g?"))
+  end)
+
+  it("hides the options and help hints when show_help_hints is false", function()
+    config.get_config().show_help_hints = false
+    local lines = render_lines(header_panel())
+    eq({ "/tmp/repo", "", "File History (0)" }, lines)
+  end)
+end)

@@ -169,7 +169,7 @@ local conflict_keymaps = {
 ---@field preferred_adapter? DiffviewPreferredAdapter Preferred VCS adapter; tried first when detecting repos.
 ---@field rename_threshold? integer Rename detection similarity (0-100). Nil uses git default (50%).
 ---@field use_icons? boolean Requires nvim-web-devicons or mini.icons.
----@field show_help_hints? boolean Show hints for how to open the help panel.
+---@field show_help_hints? boolean Show hints for how to open the help and option panels.
 ---@field show_root_path? boolean Show repository root path in panel headers.
 ---@field watch_index? boolean Update views and index buffers when the git index changes.
 ---@field hide_merge_artifacts? boolean Hide merge artifact files (*.orig, *.BACKUP.*, *.BASE.*, *.LOCAL.*, *.REMOTE.*).

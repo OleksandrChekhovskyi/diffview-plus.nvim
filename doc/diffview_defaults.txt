@@ -30,7 +30,7 @@ DEFAULT CONFIG                                  *diffview.defaults*
     preferred_adapter = nil,  -- Preferred VCS adapter ('git'|'hg'|'jj'|'p4'). Tried first when detecting repos.
     rename_threshold = nil,   -- Integer 0-100 for rename detection similarity. Nil uses git default (50%). Invalid values are ignored.
     use_icons = true,         -- Requires nvim-web-devicons or mini.icons
-    show_help_hints = true,   -- Show hints for how to open the help panel
+    show_help_hints = true,   -- Show hints for how to open the help and option panels
     show_root_path = true,    -- Show repository root path in panel headers.
     watch_index = true,       -- Update views and index buffers when the git index changes.
     hide_merge_artifacts = false, -- Hide merge artifact files (*.orig, *.BACKUP.*, *.BASE.*, *.LOCAL.*, *.REMOTE.*)
