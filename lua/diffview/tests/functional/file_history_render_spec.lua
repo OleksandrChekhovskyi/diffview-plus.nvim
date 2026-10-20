@@ -918,6 +918,17 @@ describe("file_history_panel header", function()
     return lines
   end
 
+  it("titles a single-file log 'File History'", function()
+    config.get_config().show_help_hints = false
+    local panel = header_panel({ single_file = true, entries = { header_entry("lua/a.lua") } })
+    eq("File History (1)", render_lines(panel)[4])
+  end)
+
+  it("titles a multi-file log 'History'", function()
+    config.get_config().show_help_hints = false
+    eq("History (0)", render_lines(header_panel({ path_args = { "lua" } }))[4])
+  end)
+
   it("shows the options and help hints by default", function()
     local lines = render_lines(header_panel())
     assert.truthy(vim.tbl_contains(lines, "Options: g!"))
@@ -927,7 +938,7 @@ describe("file_history_panel header", function()
   it("hides the options and help hints when show_help_hints is false", function()
     config.get_config().show_help_hints = false
     local lines = render_lines(header_panel())
-    eq({ "/tmp/repo", "", "File History (0)" }, lines)
+    eq({ "/tmp/repo", "", "History (0)" }, lines)
   end)
 
   describe("with compact_panel_headers", function()
@@ -938,7 +949,7 @@ describe("file_history_panel header", function()
 
     it("shows the root path on the title line", function()
       local lines = render_lines(header_panel())
-      eq({ "File History (0)  /tmp/repo" }, lines)
+      eq({ "History (0)  /tmp/repo" }, lines)
     end)
 
     it("shows the file of a single-file history after the root path", function()
@@ -950,19 +961,19 @@ describe("file_history_panel header", function()
     it("shows the path arguments and the revision range without labels", function()
       local panel = header_panel({ path_args = { "lua" }, rev_range = "HEAD~2..HEAD" })
       local lines = render_lines(panel)
-      eq({ "File History (0)  /tmp/repo  lua  HEAD~2..HEAD" }, lines)
+      eq({ "History (0)  /tmp/repo  lua  HEAD~2..HEAD" }, lines)
     end)
 
     it("omits the root path when show_root_path is false", function()
       config.get_config().show_root_path = false
       local lines = render_lines(header_panel({ path_args = { "lua" } }))
-      eq({ "File History (0)  lua" }, lines)
+      eq({ "History (0)  lua" }, lines)
     end)
 
     it("keeps the hints on lines of their own", function()
       config.get_config().show_help_hints = true
       local lines = render_lines(header_panel())
-      eq({ "Options: g!", "Help: g?", "File History (0)  /tmp/repo" }, lines)
+      eq({ "Options: g!", "Help: g?", "History (0)  /tmp/repo" }, lines)
     end)
 
     it("highlights the root path on the title line", function()

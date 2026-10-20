@@ -416,7 +416,8 @@ return {
     if not compact then
       comp:add_line()
     end
-    comp:add_text("File History ", "DiffviewFilePanelTitle")
+    -- A multi-file log is the history of the whole repository or of paths in it.
+    comp:add_text(panel.single_file and "File History " or "History ", "DiffviewFilePanelTitle")
     comp:add_text("(" .. #panel.entries .. ")", "DiffviewFilePanelCounter")
 
     if compact then
