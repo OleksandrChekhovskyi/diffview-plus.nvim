@@ -1100,6 +1100,20 @@ view.foldlevel                                  *diffview-config-view.foldlevel*
         value (e.g. `99`) to keep all folds open, which can help when another
         plugin's ftplugin creates unrelated folds in diff buffers.
 
+view.cursor_carry                            *diffview-config-view.cursor_carry*
+        Type: `boolean`, Default: `true`
+
+        Keep the cursor on its line of code when a step lands on another
+        revision of the file you are reading. See |diffview-cursor-carry|.
+
+        When `false`, every file opens at its first change, including one
+        visited earlier in the same view. The line usually followed into the
+        next revision is unchanged context there, so with the carry on a step
+        through a file's history tends to land on no change at all.
+        |diffview-actions-select_next_change_here| and
+        |diffview-actions-select_prev_change_here| still carry the cursor,
+        since following that line is what they are for.
+
 view.winfixbuf                                  *diffview-config-view.winfixbuf*
         Type: `boolean`, Default: `false`
 
@@ -2446,6 +2460,9 @@ Those two actions do not diff the endpoints of their skip: they map the cursor
 through every revision they pass, and land on the line that walk arrives at.
 Over a run of commits that only shift the code, an endpoint diff has no way to
 tell a moved block from a deleted one.
+
+Set |diffview-config-view.cursor_carry| to `false` to open every file at its
+first change instead. The change-here actions keep carrying the cursor.
 
                                                 *diffview-unused-actions*
 Unused actions ~

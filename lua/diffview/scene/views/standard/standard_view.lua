@@ -8,6 +8,7 @@ local Diff3 = lazy.access("diffview.scene.layouts.diff_3", "Diff3") ---@type Dif
 local Diff4 = lazy.access("diffview.scene.layouts.diff_4", "Diff4") ---@type Diff4|LazyModule
 local Panel = lazy.access("diffview.ui.panel", "Panel") ---@type Panel|LazyModule
 local View = lazy.access("diffview.scene.view", "View") ---@type View|LazyModule
+local actions = lazy.require("diffview.actions") --[[@as DiffviewActions ]]
 local config = lazy.require("diffview.config") ---@module "diffview.config"
 local line_map = lazy.require("diffview.line_map") ---@module "diffview.line_map"
 local oop = lazy.require("diffview.oop") ---@module "diffview.oop"
@@ -39,6 +40,7 @@ end
 ---@field no_panel? boolean # Per-view `--no-panel` override. When set, takes precedence over the panel's `show` config (`nil` means defer to config).
 ---@field cursor_map table<string, StandardView.CarryState> # Repo-relative path → the cursor and viewport last seen for that path. Consumed the next time the path opens.
 ---@field package _carry_lnum StandardView.CarryLnum? # A line resolved by a caller that knows it better than a diff between the two revisions can. Consumed once, by the next `restore_main_view`.
+---@field package _carry_wanted FileEntry? # An entry a caller asked to open with the cursor carried, even with `view.cursor_carry` off. Consumed once, by the next `restore_main_view`.
 ---@field package _set_file_in_flight Future? # Active `_set_file` worker; queued callers await this so `await(set_file)` returns only after the latest pending file is opened.
 ---@field package _set_file_pending FileEntry? # Newest file queued while `_set_file_in_flight` is set; the worker picks it up before terminating.
 local StandardView = oop.create_class("StandardView", View.__get())
@@ -118,6 +120,13 @@ function StandardView:init(opt)
   -- saves keep cursor + viewport for every visited file.
   self.emitter:on("file_open_pre", function(_, target, cur_entry)
     if cur_entry and cur_entry.path then
+      if not self:carries_cursor(target) then
+        -- Leaving a file also forgets what a session save recorded for it, so
+        -- a later visit opens on its first change like any other.
+        self.cursor_map[cur_entry.path] = nil
+        return
+      end
+
       local alias = StandardView._rename_alias(cur_entry, target)
       -- A caller that resolved a line for `target` followed the file there
       -- itself, across whatever renames lie between, so the two names hold
@@ -134,7 +143,9 @@ function StandardView:init(opt)
   -- open, leaving those to `file_open_new` and its default placement.
   self.emitter:on("file_open_post", function(_, entry)
     if entry and entry.opened and entry.path then
-      self:restore_main_view(entry.path)
+      if not self:restore_main_view(entry.path) and not config.get_config().view.cursor_carry then
+        actions.jump_to_first_change(self)
+      end
     end
   end)
 
@@ -288,6 +299,22 @@ function StandardView:set_carry_lnum(file, lnum)
   self._carry_lnum = { file = file, lnum = lnum }
 end
 
+---Ask the next open of `file` to carry the cursor over from the file being
+---left, even with `view.cursor_carry` off. For a caller following a line on
+---purpose, which the reader expects to keep.
+---@param file FileEntry
+function StandardView:want_carry(file)
+  self._carry_wanted = file
+end
+
+---Whether opening `target` carries the cursor over from the file being left,
+---rather than leaving it to the first change.
+---@param target FileEntry?
+---@return boolean
+function StandardView:carries_cursor(target)
+  return config.get_config().view.cursor_carry or (target ~= nil and self._carry_wanted == target)
+end
+
 ---Whether a caller has resolved a line for `file` that the next open consumes.
 ---@param file FileEntry
 ---@return boolean
@@ -313,6 +340,7 @@ function StandardView:restore_main_view(path)
   -- was resolved for is a line resolved against the wrong revision.
   local carried = self._carry_lnum
   self._carry_lnum = nil
+  self._carry_wanted = nil
 
   local target = self.cursor_map[path]
   if target == nil then

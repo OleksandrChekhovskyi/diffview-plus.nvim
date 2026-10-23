@@ -166,6 +166,108 @@ describe("file history cursor carry", function()
   end)
 end)
 
+describe("file history with cursor_carry off", function()
+  local repo, cwd, view, original_config
+
+  before_each(function()
+    original_config = vim.deepcopy(config.get_config())
+    config.get_config().use_icons = false
+    config.get_config().view.cursor_carry = false
+    repo = make_repo()
+    cwd = vim.fn.getcwd()
+    vim.cmd("cd " .. vim.fn.fnameescape(repo))
+  end)
+
+  after_each(function()
+    vim.cmd("cd " .. vim.fn.fnameescape(cwd))
+    helpers.close_view(view)
+    view = nil
+    helpers.cleanup_repo(repo)
+    config.setup(original_config)
+  end)
+
+  local function main_win()
+    return view.cur_layout:get_main_win().id
+  end
+
+  local function open_history()
+    view = lib.file_history(nil, { "file.txt" })
+    assert.is_not_nil(view)
+    view:open()
+
+    assert.is_true(
+      vim.wait(10000, function()
+        return view.ready and #view.panel.entries >= 4 and view.cur_layout ~= nil
+      end),
+      "view never became ready"
+    )
+    assert.is_true(
+      vim.wait(10000, function()
+        return api.nvim_buf_line_count(api.nvim_win_get_buf(main_win())) >= 65
+      end),
+      "the b-side buffer never loaded"
+    )
+
+    api.nvim_set_current_win(main_win())
+  end
+
+  ---@param event string
+  ---@param idx integer # Index of the entry the step must land on.
+  local function step(event, idx)
+    local prev = api.nvim_win_get_buf(main_win())
+
+    view.emitter:emit(event)
+
+    assert.is_true(
+      vim.wait(10000, function()
+        return view.panel.cur_item[1] == view.panel.entries[idx]
+          and api.nvim_win_get_buf(main_win()) ~= prev
+      end),
+      ("%s never reached entry %d"):format(event, idx)
+    )
+    vim.wait(200)
+  end
+
+  -- Every commit prepends its block, so its only change starts on line 1 while
+  -- the `body` lines below are context. c1 adds the file, which leaves nothing
+  -- on the other side to highlight a change against.
+  ---@param root? boolean # The entry is c1.
+  local function assert_on_first_change(root)
+    local main = main_win()
+    eq(1, api.nvim_win_get_cursor(main)[1])
+    if not root then
+      local hl = api.nvim_win_call(main, function()
+        return vim.fn.diff_hlID(1, 1)
+      end)
+      assert.are_not.equal(0, hl, "the cursor is not on a change")
+    end
+  end
+
+  it("opens each commit at its first change", function()
+    open_history()
+    api.nvim_win_set_cursor(main_win(), { 50, 0 })
+    eq("body 5", line_at(main_win()))
+
+    for idx = 2, 4 do
+      step("select_next_commit", idx)
+      assert_on_first_change(idx == 4)
+    end
+  end)
+
+  -- Stepping back lands on an entry that was already opened once, which
+  -- `file_open_new` does not cover.
+  it("opens a commit visited earlier at its first change", function()
+    open_history()
+    step("select_next_commit", 2)
+
+    api.nvim_win_set_cursor(main_win(), { 15, 0 })
+    eq("head 10", line_at(main_win()))
+
+    step("select_prev_commit", 1)
+    assert_on_first_change()
+  end)
+end)
+
 -- `--follow` keeps one file's history across a rename, so two neighbouring
 -- entries list the same code under two different paths:
 --

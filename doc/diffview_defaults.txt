@@ -107,6 +107,7 @@ DEFAULT CONFIG                                  *diffview.defaults*
         pin_local = false,            -- See |diffview-config-view.file_history.pin_local|
       },
       foldlevel = 0,                  -- See |diffview-config-view.foldlevel|
+      cursor_carry = true,            -- See |diffview-config-view.cursor_carry|
       winfixbuf = false,              -- See |diffview-config-view.winfixbuf|
       -- See |diffview-config-view.one_sided_layout|. When set to "raw",
       -- one-sided diffs (status A/?/D) open in a single non-diff window

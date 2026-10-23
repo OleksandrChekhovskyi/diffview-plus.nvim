@@ -482,6 +482,9 @@ FileHistoryView.select_change_here = async.void(function(self, dir)
     return
   end
 
+  -- The walk follows the line on purpose, so the cursor goes with it even when
+  -- `view.cursor_carry` leaves other steps on their first change.
+  self:want_carry(found)
   await(self:set_file(found))
 end)
 

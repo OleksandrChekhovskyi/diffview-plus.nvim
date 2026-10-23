@@ -136,6 +136,17 @@ describe("select_change_here", function()
     eq("body 12", line_at(main_win()))
   end)
 
+  it("carries the cursor with cursor_carry off", function()
+    config.get_config().view.cursor_carry = false
+    open_on("body 12")
+
+    view:select_change_here(1)
+
+    -- c1 added the file, so a plain step would open it on line 1.
+    wait_for_entry(4, 20)
+    eq("body 12", line_at(main_win()))
+  end)
+
   it("walks toward the newer commits", function()
     open_on("body 5 rewritten")
 
